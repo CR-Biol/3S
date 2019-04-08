@@ -1,4 +1,4 @@
-r"""
+DOC = """
 For Sequencing the promoter library, a pooled amplicon sequencing approach is chosen. 
 4 Plates each will be combined into one 'set' of a 2x2 arrangement (24x16 wells total).
 From each set, an aliquot of all horizontal rows and all vertical columns will be pooled
@@ -6,12 +6,13 @@ From each set, an aliquot of all horizontal rows and all vertical columns will b
 Nextera Amplicon Seq. 
 
 EXAMPLE OF ONE SET CONSISTING OF FOUR 96 WELL PLATES:
-    _______  _______  |
-    |  1  |  |  2  |  |
-    |_____|  |_____|  |
-    _______  _______  |   v-pool sampling 
-    |  3  |  |  4  |  |     => corresponds to columns
-    |_____|  |_____| \|/
+    _______  _______   
+    |  1  |  |  2  |   |
+    |_____|  |_____|   |
+    _______  _______   |   v-pool sampling 
+    |  3  |  |  4  |   |     => corresponds to columns
+    |_____|  |_____|   |
+                       V
    ------------------>
       h-pool sampling
         => corresponds to rows
@@ -24,13 +25,15 @@ coordinate allowing to further demultiplex the reads. The second demultiplexing 
 the main goal of the script.
 """
 
-import random
+import argparse
 import itertools
+import random
+import sys
 
 __author__ = "Christian Rauch"
-__version__ = "0.2a"
+__version__ = "0.3a"
 
-FILL = 5
+FILL = 6
 
 class PlateSet:
     def __init__(self, rows=16, cols=24):
@@ -265,7 +268,14 @@ def solve(
                         solved_items[item] = [(hpool_idx, vpool_idx)]
     for item in solved_items:
         if len(solved_items[item]) == 1:
+            # Fill PlateSet with unambigiously identified variants.
             solved_set.insert(item, solved_items[item][0])
+        elif args.debug:
+            # Print out debugging statements.
+            if len(solved_items[item]) == 0:
+                print("Could not solve one well")
+            else:
+                print(f"ambigious {item, solved_items[item]}")
     return solved_set
 
 
@@ -274,39 +284,54 @@ def fasta_to_pool():
 
 
 if __name__ == "__main__":
-    number_of_tests = 10
-    completely_solved = 0
-    unsolved = []
+    parser = argparse.ArgumentParser(
+        description = DOC,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument("outfile", nargs=1, type=str, help="File name for export")
+    parser.add_argument("-d", "--debug", action="store_true", help="Start in debugging mode.")
+    args = parser.parse_args()
 
-    for _ in range(number_of_tests):
-        randomset = PlateSet()
-        randomset.fill_randomly()
-        solvedset = solve(randomset.hpools(), randomset.vpools())
-        if randomset.is_equal_to(solvedset):
-            completely_solved += 1
-        else:
-            unsolved.append(solvedset.count_defaults())
+    # print(args)
+    print(args.outfile)
 
 
-    from statistics import mean
-    print(f"{completely_solved} out of {number_of_tests} sets could be solved completely. Else {mean(unsolved)} could not be resolved.")
+    if args.debug:
+        number_of_tests = 10
+        completely_solved = 0
+        unsolved = []
 
-    # testset = PlateSet()
-    # testset.fill_randomly(seed=4)
+        for _ in range(number_of_tests):
+            randomset = PlateSet()
+            randomset.fill_randomly()
+            solvedset = solve(randomset.hpools(), randomset.vpools())
+            if randomset.is_equal_to(solvedset):
+                completely_solved += 1
+            else:
+                unsolved.append(solvedset.count_defaults())
 
-    from pprint import pprint
-    solvedset.export("test1.csv", "csv", 6)
-    pprint(solvedset)
-    # solvedset.export("test2", "CSV")
-    # solvedset.export("test3", "xlsx")
 
-    # solved = solve(testset.hpools(), testset.vpools())
-    # print(testset)
-    # print()
-    # print(solved)
-    # print()
-    # print(testset.is_equal_to(solved))
+        from statistics import mean
+        print(f"{completely_solved} out of {number_of_tests} sets could be solved completely.")
+        if unsolved:
+            print(f"Else {mean(unsolved)} could not be resolved.")
 
-    # print(testset)
-    # pprint(testset.hpools())
-    # pprint(testset.vpools())
+        # testset = PlateSet()
+        # testset.fill_randomly(seed=4)
+
+        from pprint import pprint
+        solvedset.export("test1.csv", "csv", 6)
+        # pprint(solvedset)
+        # solvedset.export("test2", "CSV")
+        # solvedset.export("test3", "xlsx")
+
+        # solved = solve(testset.hpools(), testset.vpools())
+        # print(testset)
+        # print()
+        # print(solved)
+        # print()
+        # print(testset.is_equal_to(solved))
+
+        # print(testset)
+        # pprint(testset.hpools())
+        # pprint(testset.vpools())
