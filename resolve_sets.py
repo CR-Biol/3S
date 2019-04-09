@@ -288,18 +288,30 @@ if __name__ == "__main__":
         description = DOC,
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("outfile", nargs=1, type=str, help="File name for export")
+    parser.add_argument("-o", "--outfile", nargs=1, type=str, help="File name for export")
+    parser.add_argument(
+        "-f", 
+        "--fill", 
+        nargs=1, 
+        type=int, 
+        default=FILL,
+        metavar="FILL",
+        help=f"Set the FILL variable from default ({FILL})."
+    )
     parser.add_argument("-d", "--debug", action="store_true", help="Start in debugging mode.")
     args = parser.parse_args()
 
-    # print(args)
-    print(args.outfile)
-
+    if args.fill:
+        FILL = args.fill[0]
 
     if args.debug:
+        print("Running in Debug mode.")
+
         number_of_tests = 10
         completely_solved = 0
         unsolved = []
+
+        print(f"Trying to solve {number_of_tests} randomized plates.")
 
         for _ in range(number_of_tests):
             randomset = PlateSet()
@@ -314,24 +326,4 @@ if __name__ == "__main__":
         from statistics import mean
         print(f"{completely_solved} out of {number_of_tests} sets could be solved completely.")
         if unsolved:
-            print(f"Else {mean(unsolved)} could not be resolved.")
-
-        # testset = PlateSet()
-        # testset.fill_randomly(seed=4)
-
-        from pprint import pprint
-        solvedset.export("test1.csv", "csv", 6)
-        # pprint(solvedset)
-        # solvedset.export("test2", "CSV")
-        # solvedset.export("test3", "xlsx")
-
-        # solved = solve(testset.hpools(), testset.vpools())
-        # print(testset)
-        # print()
-        # print(solved)
-        # print()
-        # print(testset.is_equal_to(solved))
-
-        # print(testset)
-        # pprint(testset.hpools())
-        # pprint(testset.vpools())
+            print(f"From the unsolved, a mean of {mean(unsolved)} wells could not be resolved.")
